@@ -24,7 +24,7 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 logger.info(f"Current directory set to {current_directory}")
 
 #load models
-model_path = os.path.join(current_directory, "models", "best_model.joblib")
+model_path = os.path.join(current_directory, "NLP", "models", "best_model.joblib")
 try:
     model = joblib.load(model_path)
     logger.info("Successfully loaded the model.")
@@ -33,7 +33,7 @@ except Exception as e:
     raise
 
 # Load vectorizer
-vectorizer_path = os.path.join(current_directory, "models", "vectorizer.joblib")
+vectorizer_path = os.path.join(current_directory, "NLP", "models", "vectorizer.joblib")
 try:
     vectorizer = joblib.load(vectorizer_path)
     logger.info("Successfully loaded the vectorizer.")
