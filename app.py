@@ -65,3 +65,5 @@ async def classify_tweet(tweet: Tweet):
         # Log the tweet text and the exception
         logger.error(f"Error processing tweet: {tweet.text}, Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
