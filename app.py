@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 try:
     spacy.load("en_core_web_sm")
     logger.info("Successfully loaded SpaCy model.")
-except OSError:
+except Exception as e:
     logger.error(f"Failed to load SpaCy model: {str(e)}")
     from spacy.cli import download
     download("en_core_web_sm")
