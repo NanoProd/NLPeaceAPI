@@ -12,21 +12,34 @@ logger = logging.getLogger(__name__)
 # Download the model if it's not already installed
 try:
     spacy.load("en_core_web_sm")
+    logger.info("Successfully loaded SpaCy model.")
 except OSError:
+    logger.error(f"Failed to load SpaCy model: {str(e)}")
     from spacy.cli import download
     download("en_core_web_sm")
     spacy.load("en_core_web_sm")
 
 #configure directory
 current_directory = os.path.dirname(os.path.abspath(__file__))
+logger.info(f"Current directory set to {current_directory}")
 
 #load models
 model_path = os.path.join(current_directory, "models", "best_model.joblib")
-model = joblib.load(model_path)
+try:
+    model = joblib.load(model_path)
+    logger.info("Successfully loaded the model.")
+except Exception as e:
+    logger.error(f"Error loading model: {str(e)}")
+    raise
 
-#load vectorizer
+# Load vectorizer
 vectorizer_path = os.path.join(current_directory, "models", "vectorizer.joblib")
-vectorizer = joblib.load(vectorizer_path)
+try:
+    vectorizer = joblib.load(vectorizer_path)
+    logger.info("Successfully loaded the vectorizer.")
+except Exception as e:
+    logger.error(f"Error loading vectorizer: {str(e)}")
+    raise
 
 #define app
 app = FastAPI()
