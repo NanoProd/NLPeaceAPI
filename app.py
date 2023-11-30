@@ -48,6 +48,9 @@ app = FastAPI()
 class Tweet(BaseModel):
     text: str
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 @app.post("/classify/")
 async def classify_tweet(tweet: Tweet):
