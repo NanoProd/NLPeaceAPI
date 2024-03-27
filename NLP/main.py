@@ -36,30 +36,24 @@ logger.info("Starting the NLP pipeline for hatespeech...")
 
 df = dp.import_hate_data()
 
-df['label'] = df['class']
-#df['label'] = df['label'].map(lambda x: 1 if x == 2 else x)
-
-try:
-    #vectorizer = load('models/vectorizer.joblib')
-    vectorizer = TfidfVectorizer(max_features=5000)
-except:
-    vectorizer = TfidfVectorizer(max_features=5000)
-
+vectorizer = TfidfVectorizer(max_features=5000)
 
 df['tweet'] = df['tweet'].apply(dp.preprocess)
 
-
 X = vectorizer.fit_transform(df["tweet"])
+df['label'] = df['class']
 y = df["label"]
 
 # Define class weights
-class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(df['class']), y=df['class'])
+class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(df['label']), y=df['label'])
 class_weights = dict(zip(np.unique(y), class_weights.flatten()))
 print("class weight:")
 print(class_weights)
+
+
 #save the vectorizer
-#dump(vectorizer, 'models/vectorizer.joblib')
-#logger.info("Vectorizer saved successfully.")
+dump(vectorizer, 'models/hate_vectorizer.joblib')
+logger.info("Vectorizer saved successfully.")
 
 # Train models
 rf_model, rf_score = models.train_random_forest(X, y, class_weights=class_weights)
@@ -67,8 +61,6 @@ xgb_model, xgb_score = models.train_xgboost(X, y, 3, class_weights=class_weights
 svm_model, svm_score = models.train_svm(X, y, class_weights=class_weights)
 naive_model, naive_score = models.train_naive_bayes(X, y, class_weights=class_weights)
 knn_model, knn_score = models.train_knn(X, y, class_weights=class_weights)
-
-
 
 #find best model
 best_model, best_score, best_model_name = None, 0, ''

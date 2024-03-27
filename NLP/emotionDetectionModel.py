@@ -37,10 +37,7 @@ logger.info("Starting the NLP pipeline for emotion detection...")
 
 df = dp.import_emotion_data()
 
-try:
-    vectorizer = load('models/vectorizer.joblib')
-except:
-    vectorizer = TfidfVectorizer(max_features=5000)
+vectorizer = TfidfVectorizer(max_features=5000)
 
 
 df['text'] = df['text'].apply(dp.preprocess)
@@ -76,6 +73,10 @@ class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(
 class_weights = dict(zip(np.unique(y), class_weights.flatten()))
 print("class weight:")
 print(class_weights)
+
+#save the vectorizer
+dump(vectorizer, 'models/emotion_vectorizer.joblib')
+logger.info("Vectorizer saved successfully.")
 
 
 # Train models
