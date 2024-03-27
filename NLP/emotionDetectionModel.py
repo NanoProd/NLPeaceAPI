@@ -26,6 +26,8 @@ from logger_config import configure_logger
 from joblib import dump, load
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
+import numpy as np
+from sklearn.utils import class_weight
 
 logger = configure_logger(__name__)
 
@@ -57,8 +59,7 @@ print(df.head(5))
 #0 -> anger
 #1 -> fear
 #2 -> joy
-#3 -> label
-#4 -> sadness
+#3 -> sadness
 
 
 X = vectorizer.fit_transform(df["text"])
@@ -70,13 +71,20 @@ label_counts = df['label'].value_counts()
 # Print out the number of unique labels
 print("Number of unique labels:", len(label_counts))
 
+# Define class weights
+class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(df['label']), y=df['label'])
+class_weights = dict(zip(np.unique(y), class_weights.flatten()))
+print("class weight:")
+print(class_weights)
 
-#get best models and score from training loops
-rf_model, rf_score = models.train_random_forest(X, y)
-xgb_model, xgb_score = models.train_xgboost(X, y, 4)
-svm_model, svm_score = models.train_svm(X,y)
-naive_model, naive_score = models.train_naive_bayes(X, y)
-knn_model, knn_score = models.train_knn(X,y)
+
+# Train models
+rf_model, rf_score = models.train_random_forest(X, y, class_weights=class_weights)
+xgb_model, xgb_score = models.train_xgboost(X, y, 4, class_weights=class_weights)
+svm_model, svm_score = models.train_svm(X, y, class_weights=class_weights)
+naive_model, naive_score = models.train_naive_bayes(X, y, class_weights=class_weights)
+knn_model, knn_score = models.train_knn(X, y, class_weights=class_weights)
+
 
 
 #find best model

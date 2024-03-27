@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Import necessary libraries
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -31,12 +32,12 @@ import xgboost as xgb
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 
-
+# Import logger
 from logger_config import configure_logger
 logger = configure_logger(__name__)
 
-def train_random_forest(X, y):
-    clf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced")
+def train_random_forest(X, y, class_weights=None):
+    clf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight=class_weights)
     kf = KFold(n_splits=5)
     best_f1_score = 0
     best_model_rf = None
@@ -53,8 +54,8 @@ def train_random_forest(X, y):
     if best_model_rf:
         return best_model_rf, best_f1_score
 
-def train_xgboost(X, y, num_classes):
-    clf_xgb = xgb.XGBClassifier(objective='multi:softmax', num_class=num_classes)
+def train_xgboost(X, y, num_classes, class_weights=None):
+    clf_xgb = xgb.XGBClassifier(objective='multi:softmax', num_class=num_classes, class_weight=class_weights)
     kf = KFold(n_splits=5)
     best_f1_score = 0
     best_model = None
@@ -78,8 +79,8 @@ def vectorize_data(df, vectorizer):
     y = df["class"]
     return X, y, vectorizer
 
-def train_svm(X, y):
-    clf_svm = SVC(kernel='linear', class_weight='balanced')
+def train_svm(X, y, class_weights=None):
+    clf_svm = SVC(kernel='linear', class_weight=class_weights)
     kf = KFold(n_splits=5)
     best_f1_score = 0
     best_model_svm = None
@@ -96,8 +97,13 @@ def train_svm(X, y):
     if best_model_svm:
         return best_model_svm, best_f1_score
 
-def train_naive_bayes(X, y):
-    clf_nb = MultinomialNB()
+def train_naive_bayes(X, y, class_weights=None):
+    if class_weights is None:
+        clf_nb = MultinomialNB()
+    else:
+        class_prior = np.array([class_weights[i] for i in sorted(class_weights.keys())])
+        clf_nb = MultinomialNB(class_prior=class_prior)
+
     kf = KFold(n_splits=5)
     best_f1_score = 0
     best_model_nb = None
@@ -114,8 +120,8 @@ def train_naive_bayes(X, y):
     if best_model_nb:
         return best_model_nb, best_f1_score
     
-def train_knn(X, y):
-    clf_knn = KNeighborsClassifier()
+def train_knn(X, y, class_weights=None):
+    clf_knn = KNeighborsClassifier(weights='distance')
     kf = KFold(n_splits=5)
     best_f1_score = 0
     best_model_knn = None

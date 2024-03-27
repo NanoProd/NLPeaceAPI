@@ -25,6 +25,8 @@ import models
 from logger_config import configure_logger
 from joblib import dump, load
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.utils import class_weight
+import numpy as np
 
 logger = configure_logger(__name__)
 
@@ -35,10 +37,11 @@ logger.info("Starting the NLP pipeline for hatespeech...")
 df = dp.import_hate_data()
 
 df['label'] = df['class']
-df['label'] = df['label'].map(lambda x: 1 if x == 2 else x)
+#df['label'] = df['label'].map(lambda x: 1 if x == 2 else x)
 
 try:
-    vectorizer = load('models/vectorizer.joblib')
+    #vectorizer = load('models/vectorizer.joblib')
+    vectorizer = TfidfVectorizer(max_features=5000)
 except:
     vectorizer = TfidfVectorizer(max_features=5000)
 
@@ -49,16 +52,22 @@ df['tweet'] = df['tweet'].apply(dp.preprocess)
 X = vectorizer.fit_transform(df["tweet"])
 y = df["label"]
 
+# Define class weights
+class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(df['class']), y=df['class'])
+class_weights = dict(zip(np.unique(y), class_weights.flatten()))
+print("class weight:")
+print(class_weights)
 #save the vectorizer
 #dump(vectorizer, 'models/vectorizer.joblib')
 #logger.info("Vectorizer saved successfully.")
 
-#get best models and score from training loops
-rf_model, rf_score = models.train_random_forest(X, y)
-xgb_model, xgb_score = models.train_xgboost(X, y, 2)
-svm_model, svm_score = models.train_svm(X,y)
-naive_model, naive_score = models.train_naive_bayes(X, y)
-knn_model, knn_score = models.train_knn(X,y)
+# Train models
+rf_model, rf_score = models.train_random_forest(X, y, class_weights=class_weights)
+xgb_model, xgb_score = models.train_xgboost(X, y, 3, class_weights=class_weights)
+svm_model, svm_score = models.train_svm(X, y, class_weights=class_weights)
+naive_model, naive_score = models.train_naive_bayes(X, y, class_weights=class_weights)
+knn_model, knn_score = models.train_knn(X, y, class_weights=class_weights)
+
 
 
 #find best model
