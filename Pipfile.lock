@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "50e4322c53558149173ce17142fdaa881d17e61fff6a8ebcde8f98224688480e"
+            "sha256": "1ba7ad8cc12665d459b328ca022a0eaa393d65cb2e882f9c2efabd39b2fa3bad"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -275,12 +275,6 @@
                 "sha256:ecd12e3bacf3eed5486e4cd8ede3c12da66ee0e0a9d0ae046962bc2bb503acef"
             ],
             "version": "==2.0.8"
-        },
-        "en-core-web-sm": {
-            "file": "en_core_web_sm-2.2.0.tar.gz",
-            "hashes": [
-                "sha256:65cea113d7509d5ab515583bbcbc9a31b4157bebbb73133d4110d2945476eaa4"
-            ]
         },
         "exceptiongroup": {
             "hashes": [
