@@ -32,6 +32,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import nlpaug.augmenter.word as naw
 from sklearn.preprocessing import LabelEncoder
+import os
 
 # Constants for Neural Network
 MAX_VOCAB_SIZE = 10000
@@ -41,7 +42,12 @@ MAX_SEQUENCE_LENGTH = 280
 nltk.download('stopwords')
 nltk.download('punkt')
 stop_words = set(stopwords.words('english'))
-nlp = spacy.load('en_core_web_sm', disable=['parser', 'ner'])
+
+model = 'en_core_web_sm'
+if not spacy.util.is_package(model):
+    os.system(f"python -m spacy download {model}")
+
+nlp = spacy.load(model, disable=['parser', 'ner'])
 
 def import_hate_data():
     df = pd.read_csv('data/hatespeech.csv')
