@@ -1,19 +1,19 @@
 import numpy as np
 import tensorflow as tf
-import xgboost as xgb
-from sklearn.ensemble import RandomForestClassifier
+# import xgboost as xgb
+# from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.utils.class_weight import compute_class_weight
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.svm import SVC
+# from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.layers import Conv1D, Dense, Dropout, Embedding, GlobalAveragePooling1D, Input, MaxPooling1D
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.utils import to_categorical
-import tensorflow_addons as tfa
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.optimizers import Adam
+# from tensorflow.keras.utils import to_categorical
+# import tensorflow_addons as tfa
+# from tensorflow.keras.regularizers import l2
+# from tensorflow.keras.optimizers import Adam
 
 # Import logger
 from logger_config import configure_logger
@@ -24,100 +24,100 @@ logger = configure_logger(__name__)
 from logger_config import configure_logger
 logger = configure_logger(__name__)
 
-def train_random_forest(X, y, class_weights=None):
-    clf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight=class_weights)
-    kf = KFold(n_splits=5)
-    best_f1_score = 0
-    best_model_rf = None
-    for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf.fit(X_train, y_train)
-        y_pred = clf.predict(X_test)
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        logger.info(f"RandomForest F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model_rf = clf
-    if best_model_rf:
-        return best_model_rf, best_f1_score
+# #def train_random_forest(X, y, class_weights=None):
+# #    clf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight=class_weights)
+# #    kf = KFold(n_splits=5)
+# #    best_f1_score = 0
+# #    best_model_rf = None
+# #    for train_index, test_index in kf.split(X):
+# #        X_train, X_test = X[train_index], X[test_index]
+#         y_train, y_test = y[train_index], y[test_index]
+#         clf.fit(X_train, y_train)
+#         y_pred = clf.predict(X_test)
+#         f1 = f1_score(y_test, y_pred, average='weighted')
+#         logger.info(f"RandomForest F1 Score: {f1}")
+#         if f1 > best_f1_score:
+#             best_f1_score = f1
+#             best_model_rf = clf
+#     if best_model_rf:
+#         return best_model_rf, best_f1_score
 
-def train_xgboost(X, y, num_classes, class_weights=None):
-    clf_xgb = xgb.XGBClassifier(objective='multi:softmax', num_class=num_classes, class_weight=class_weights)
-    kf = KFold(n_splits=5)
-    best_f1_score = 0
-    best_model = None
-    for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf_xgb.fit(X_train, y_train)
-        y_pred = clf_xgb.predict(X_test)
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        logger.info(f"XGBoost F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model = clf_xgb
-    if best_model:
-        return best_model, best_f1_score
+# def train_xgboost(X, y, num_classes, class_weights=None):
+#     clf_xgb = xgb.XGBClassifier(objective='multi:softmax', num_class=num_classes, class_weight=class_weights)
+#     kf = KFold(n_splits=5)
+#     best_f1_score = 0
+#     best_model = None
+#     for train_index, test_index in kf.split(X):
+#         X_train, X_test = X[train_index], X[test_index]
+#         y_train, y_test = y[train_index], y[test_index]
+#         clf_xgb.fit(X_train, y_train)
+#         y_pred = clf_xgb.predict(X_test)
+#         f1 = f1_score(y_test, y_pred, average='weighted')
+#         logger.info(f"XGBoost F1 Score: {f1}")
+#         if f1 > best_f1_score:
+#             best_f1_score = f1
+#             best_model = clf_xgb
+#     if best_model:
+#         return best_model, best_f1_score
 
-def train_svm(X, y, class_weights=None):
-    clf_svm = SVC(kernel='linear', class_weight=class_weights)
-    kf = KFold(n_splits=5)
-    best_f1_score = 0
-    best_model_svm = None
-    for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf_svm.fit(X_train, y_train)
-        y_pred = clf_svm.predict(X_test)
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        logger.info(f"SVM F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model_svm = clf_svm
-    if best_model_svm:
-        return best_model_svm, best_f1_score
+# def train_svm(X, y, class_weights=None):
+#     clf_svm = SVC(kernel='linear', class_weight=class_weights)
+#     kf = KFold(n_splits=5)
+#     best_f1_score = 0
+#     best_model_svm = None
+#     for train_index, test_index in kf.split(X):
+#         X_train, X_test = X[train_index], X[test_index]
+#         y_train, y_test = y[train_index], y[test_index]
+#         clf_svm.fit(X_train, y_train)
+#         y_pred = clf_svm.predict(X_test)
+#         f1 = f1_score(y_test, y_pred, average='weighted')
+#         logger.info(f"SVM F1 Score: {f1}")
+#         if f1 > best_f1_score:
+#             best_f1_score = f1
+#             best_model_svm = clf_svm
+#     if best_model_svm:
+#         return best_model_svm, best_f1_score
 
-def train_naive_bayes(X, y, class_weights=None):
-    if class_weights is None:
-        clf_nb = MultinomialNB()
-    else:
-        class_prior = np.array([class_weights[i] for i in sorted(class_weights.keys())])
-        clf_nb = MultinomialNB(class_prior=class_prior)
+# def train_naive_bayes(X, y, class_weights=None):
+#     if class_weights is None:
+#         clf_nb = MultinomialNB()
+#     else:
+#         class_prior = np.array([class_weights[i] for i in sorted(class_weights.keys())])
+#         clf_nb = MultinomialNB(class_prior=class_prior)
 
-    kf = KFold(n_splits=5)
-    best_f1_score = 0
-    best_model_nb = None
-    for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf_nb.fit(X_train, y_train)
-        y_pred = clf_nb.predict(X_test)
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        logger.info(f"Naive Bayes F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model_nb = clf_nb
-    if best_model_nb:
-        return best_model_nb, best_f1_score
+#     kf = KFold(n_splits=5)
+#     best_f1_score = 0
+#     best_model_nb = None
+#     for train_index, test_index in kf.split(X):
+#         X_train, X_test = X[train_index], X[test_index]
+#         y_train, y_test = y[train_index], y[test_index]
+#         clf_nb.fit(X_train, y_train)
+#         y_pred = clf_nb.predict(X_test)
+#         f1 = f1_score(y_test, y_pred, average='weighted')
+#         logger.info(f"Naive Bayes F1 Score: {f1}")
+#         if f1 > best_f1_score:
+#             best_f1_score = f1
+#             best_model_nb = clf_nb
+#     if best_model_nb:
+#         return best_model_nb, best_f1_score
     
-def train_knn(X, y, class_weights=None):
-    clf_knn = KNeighborsClassifier(weights='distance')
-    kf = KFold(n_splits=5)
-    best_f1_score = 0
-    best_model_knn = None
-    for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf_knn.fit(X_train, y_train)
-        y_pred = clf_knn.predict(X_test)
-        f1 = f1_score(y_test, y_pred, average='weighted')
-        logger.info(f"KNN F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model_knn = clf_knn
-    if best_model_knn:
-        return best_model_knn, best_f1_score
+# def train_knn(X, y, class_weights=None):
+#     clf_knn = KNeighborsClassifier(weights='distance')
+#     kf = KFold(n_splits=5)
+#     best_f1_score = 0
+#     best_model_knn = None
+#     for train_index, test_index in kf.split(X):
+#         X_train, X_test = X[train_index], X[test_index]
+#         y_train, y_test = y[train_index], y[test_index]
+#         clf_knn.fit(X_train, y_train)
+#         y_pred = clf_knn.predict(X_test)
+#         f1 = f1_score(y_test, y_pred, average='weighted')
+#         logger.info(f"KNN F1 Score: {f1}")
+#         if f1 > best_f1_score:
+#             best_f1_score = f1
+#             best_model_knn = clf_knn
+#     if best_model_knn:
+#         return best_model_knn, best_f1_score
 
 
 import tensorflow.keras.backend as K
