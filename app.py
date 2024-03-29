@@ -8,6 +8,21 @@ import tensorflow as tf
 import pickle
 import numpy as np
 
+
+#custom loss function
+import tensorflow.keras.backend as K
+
+def f1_score(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    recall = true_positives / (possible_positives + K.epsilon())
+    f1_val = 2 * (precision * recall) / (precision + recall + K.epsilon())
+    return f1_val
+
+
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,18 +42,18 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 logger.info(f"Current directory set to {current_directory}")
 
 # Load neural network models
-hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model.keras")
-emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model.keras")
+hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model")
+emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model")
 
 try:
-    hate_model = tf.keras.models.load_model(hate_model_path)
+    hate_model = tf.keras.models.load_model(hate_model_path, custom_objects={'f1_score': f1_score})
     logger.info("Successfully loaded the hate model.")
 except Exception as e:
     logger.error(f"Error loading model: {str(e)}")
     raise
 
 try:
-    emotion_model = tf.keras.models.load_model(emotion_model_path)
+    emotion_model = tf.keras.models.load_model(emotion_model_path, custom_objects={'f1_score': f1_score})
     logger.info("Successfully loaded the emotion model.")
 except Exception as e:
     logger.error(f"Error loading model: {str(e)}")
