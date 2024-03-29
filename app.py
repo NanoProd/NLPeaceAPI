@@ -1,15 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import joblib
 import os
 import spacy
 import logging
+import data_processing as dp
+import tensorflow as tf
+import pickle
+import numpy as np
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Download the model if it's not already installed
+# Download the Spacy model if it's not already installed
 try:
     spacy.load("en_core_web_sm")
     logger.info("Successfully loaded SpaCy model.")
@@ -19,33 +22,45 @@ except Exception as e:
     download("en_core_web_sm")
     spacy.load("en_core_web_sm")
 
-#configure directory
+# Configure directory
 current_directory = os.path.dirname(os.path.abspath(__file__))
 logger.info(f"Current directory set to {current_directory}")
 
-#load models
-hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model.joblib")
-emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model.joblib")
+# Load neural network models
+hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model")
+emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model")
 
 try:
-    hate_model = joblib.load(hate_model_path)
+    hate_model = tf.keras.models.load_model(hate_model_path)
     logger.info("Successfully loaded the hate model.")
 except Exception as e:
     logger.error(f"Error loading model: {str(e)}")
     raise
 
 try:
-    emotion_model = joblib.load(emotion_model_path)
+    emotion_model = tf.keras.models.load_model(emotion_model_path)
     logger.info("Successfully loaded the emotion model.")
 except Exception as e:
     logger.error(f"Error loading model: {str(e)}")
     raise
 
-# Load vectorizer
-hate_vectorizer_path = os.path.join(current_directory, "NLP", "models", "hate_vectorizer.joblib")
-emotion_vectorizer_path = os.path.join(current_directory, "NLP", "models", "emotion_vectorizer.joblib")
+# Load tokenizers
+hate_tokenizer_path = os.path.join(current_directory, "NLP", "models", "hate_tokenizer.pickle")
+emotion_tokenizer_path = os.path.join(current_directory, "NLP", "models", "emotion_tokenizer.pickle")
 
-#define class labels
+try:
+    with open(hate_tokenizer_path, 'rb') as handle:
+        hate_tokenizer = pickle.load(handle)
+    logger.info("Successfully loaded the hate tokenizer.")
+
+    with open(emotion_tokenizer_path, 'rb') as handle:
+        emotion_tokenizer = pickle.load(handle)
+    logger.info("Successfully loaded the emotion tokenizer.")
+except Exception as e:
+    logger.error(f"Error loading tokenizers: {str(e)}")
+    raise
+
+# Define class labels
 hate_class_names = {
     0: "Hate Speech",
     1: "Offensive Language",
@@ -60,20 +75,10 @@ emotion_class_names = {
     4: "Fear"
 }
 
-try:
-    hate_vectorizer = joblib.load(hate_vectorizer_path)
-    logger.info("Successfully loaded the hate vectorizer.")
-
-    emotion_vectorizer = joblib.load(emotion_vectorizer_path)
-    logger.info("Successfully loaded the emotion vectorizer.")
-except Exception as e:
-    logger.error(f"Error loading vectorizers: {str(e)}")
-    raise
-
-#define app
+# Define app
 app = FastAPI()
 
-#define tweet class
+# Define tweet class
 class Tweet(BaseModel):
     text: str
 
@@ -81,32 +86,45 @@ class Tweet(BaseModel):
 def read_root():
     return {"Hello": "World"}
 
+# Helper function to prepare text for neural network
+def prepare_text_for_nn(text, tokenizer):
+    processed_text = dp.preprocess(text)
+    sequence = tokenizer.texts_to_sequences([processed_text])
+    padded_sequence = tf.keras.preprocessing.sequence.pad_sequences(sequence, maxlen=280)
+    return padded_sequence
+
 @app.post("/classify/")
-async def classify_tweet(tweet: Tweet):
+async def classify_hatespeech(tweet: Tweet):
     if not tweet.text:
         return {"prediction": -1, "class_name": "Invalid Input"}
     try:
-        # preprocess and vectorize the tweet text
-        processed_tweet = hate_vectorizer.transform([tweet.text])
-        prediction = hate_model.predict(processed_tweet)
-        class_label = int(prediction[0])
+        padded_sequence = prepare_text_for_nn(tweet.text, hate_tokenizer)
+        prediction = hate_model.predict(padded_sequence)
+        class_label = int(np.argmax(prediction, axis=1)[0])
+
+        # Adjust the mapping of predictions
+        if class_label == 1:
+            class_label = 2
+
         class_name = hate_class_names.get(class_label, "Unknown")
         return {"prediction": class_label, "class_name": class_name}
     except Exception as e:
         logger.error(f"Error processing tweet: {tweet.text}, Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    
-
 @app.post("/classify-hatespeech/")
 async def classify_hatespeech(tweet: Tweet):
     if not tweet.text:
         return {"prediction": -1, "class_name": "Invalid Input"}
     try:
-        # preprocess and vectorize the tweet text
-        processed_tweet = hate_vectorizer.transform([tweet.text])
-        prediction = hate_model.predict(processed_tweet)
-        class_label = int(prediction[0])
+        padded_sequence = prepare_text_for_nn(tweet.text, hate_tokenizer)
+        prediction = hate_model.predict(padded_sequence)
+        class_label = int(np.argmax(prediction, axis=1)[0])
+
+        # Adjust the mapping of predictions
+        if class_label == 1:
+            class_label = 2
+
         class_name = hate_class_names.get(class_label, "Unknown")
         return {"prediction": class_label, "class_name": class_name}
     except Exception as e:
@@ -118,17 +136,12 @@ async def classify_emotion(tweet: Tweet):
     if not tweet.text:
         return {"prediction": -1, "class_name": "Invalid Input"}
     try:
-        # preprocess and vectorize the tweet text
-        processed_tweet = emotion_vectorizer.transform([tweet.text])
-        prediction = emotion_model.predict(processed_tweet)
-        class_label = int(prediction[0])
+        padded_sequence = prepare_text_for_nn(tweet.text, emotion_tokenizer)
+        prediction = emotion_model.predict(padded_sequence)
+        class_label = int(np.argmax(prediction, axis=1)[0])
         class_name = emotion_class_names.get(class_label, "Unknown")
         return {"prediction": class_label, "class_name": class_name}
     except Exception as e:
         logger.error(f"Error processing tweet: {tweet.text}, Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    
-
-
-
 

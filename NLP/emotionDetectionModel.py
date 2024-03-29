@@ -1,110 +1,69 @@
-# MIT License
-
-# Copyright (c) 2023 Fatima El Fouladi, Anum Siddiqui, Jeff Wilgus, David Lemme, Mira Aji, Adam Qamar, Shabia Saeed, Raya Maria Lahoud , Nelly Bozorgzad, Joshua-James Nantel-Ouimet .
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 import data_processing as dp
 import models
 from logger_config import configure_logger
-from joblib import dump, load
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.utils import to_categorical
+import pickle
+import tensorflow as tf
 import numpy as np
-from sklearn.utils import class_weight
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import nlpaug.augmenter.word as naw
 
 logger = configure_logger(__name__)
-
-
 logger.info("Starting the NLP pipeline for emotion detection...")
 
-
+# Load and preprocess data
 df = dp.import_emotion_data()
-
-vectorizer = TfidfVectorizer(max_features=5000)
-
-
 df['text'] = df['text'].apply(dp.preprocess)
 
-df['label'] = df['label'].str.strip()
+# Log the number of samples per class before augmentation
+class_distribution = df['label'].value_counts()
+logger.info(f"Number of samples per class after preprocessing:\n{class_distribution}")
 
-# Initialize LabelEncoder
+# Define the text augmentation function
+#def augment_text(text, num_augmentations=1):
+#    aug = naw.SynonymAug(aug_src='wordnet')
+#    augmented_texts = [aug.augment(text) for _ in range(num_augmentations)]
+#    return augmented_texts
+
+# Augment data for each class
+#num_augmentations = 1
+#augmented_df = pd.DataFrame()
+
+#for label in df['label'].unique():
+ #   class_df = df[df['label'] == label]
+  #  augmented_texts = class_df['text'].apply(lambda x: augment_text(x, num_augmentations)).explode()
+   # augmented_labels = [label] * len(augmented_texts)
+   # augmented_class_df = pd.DataFrame({'text': augmented_texts, 'label': augmented_labels})
+   # augmented_df = pd.concat([augmented_df, augmented_class_df])
+
+# Combine original and augmented data
+#df = pd.concat([df, augmented_df])
+#df = df.sample(frac=1).reset_index(drop=True)
+
+# Log the number of samples per class after augmentation
+#class_distribution = df['label'].value_counts()
+#logger.info(f"Number of samples per class after augmentation:\n{class_distribution}")
+
+# Encoding labels with LabelEncoder
 label_encoder = LabelEncoder()
-label_encoder.fit(['anger', 'fear', 'joy', 'sadness'])  # Specify all classes present in your dataset
+df['label'] = label_encoder.fit_transform(df['label'])
+y = df['label']
 
-# Transform labels to numerical values
-df['label'] = label_encoder.transform(df['label'])
+# Prepare data for neural network model
+nn_texts, tokenizer = dp.tokenize_and_pad_texts(df['text'].values)
+nn_labels = to_categorical(y)  # One-hot encoding for multi-class
 
-print(df.head(5))
+# Train neural network model using the defined emotion neural network function
+nn_model = models.train_emotion_neural_network(nn_texts, nn_labels, num_classes=len(np.unique(y)))
 
-#0 -> anger
-#1 -> fear
-#2 -> joy
-#3 -> sadness
+# Save the neural network model in the TensorFlow SavedModel format
+emotion_model_path = 'models/best_emotion_model.keras'
+nn_model.save(emotion_model_path)
+logger.info("Saved Neural Network model")
 
-
-X = vectorizer.fit_transform(df["text"])
-y = df["label"]
-
-# Count occurrences of each label
-label_counts = df['label'].value_counts()
-
-# Print out the number of unique labels
-print("Number of unique labels:", len(label_counts))
-
-# Define class weights
-class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(df['label']), y=df['label'])
-class_weights = dict(zip(np.unique(y), class_weights.flatten()))
-print("class weight:")
-print(class_weights)
-
-#save the vectorizer
-dump(vectorizer, 'models/emotion_vectorizer.joblib')
-logger.info("Vectorizer saved successfully.")
-
-
-# Train models
-rf_model, rf_score = models.train_random_forest(X, y, class_weights=class_weights)
-xgb_model, xgb_score = models.train_xgboost(X, y, 4, class_weights=class_weights)
-svm_model, svm_score = models.train_svm(X, y, class_weights=class_weights)
-naive_model, naive_score = models.train_naive_bayes(X, y, class_weights=class_weights)
-knn_model, knn_score = models.train_knn(X, y, class_weights=class_weights)
-
-
-
-#find best model
-best_model, best_score, best_model_name = None, 0, ''
-if rf_score > best_score:
-    best_model, best_score, best_model_name = rf_model, rf_score, 'Random Forest'
-if xgb_score > best_score:
-    best_model, best_score, best_model_name = xgb_model, xgb_score, 'XGBoost'
-if svm_score > best_score:
-    best_model, best_score, best_model_name = svm_model, svm_score, 'SVM'
-if naive_score > best_score:
-    best_model, best_score, best_model_name = naive_model, naive_score, 'Naive Bayes'
-if knn_score > best_score:
-    best_model, best_score, best_model_name = knn_model, knn_score, 'K Nearest Neighbor'
-
-
-# Save the best model
-if best_model:
-    model_path = 'models/best_emotion_model.joblib'
-    dump(best_model, model_path)
-    logger.info(f"Saved best model ({best_model_name}) with score: {best_score}")
-
+# Save the tokenizer
+emotion_tokenizer_path = 'models/emotion_tokenizer.pickle'
+with open(emotion_tokenizer_path, 'wb') as handle:
+    pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+logger.info("Saved tokenizer for Neural Network model")

@@ -1,36 +1,24 @@
-# MIT License
-
-# Copyright (c) 2023 Fatima El Fouladi, Anum Siddiqui, Jeff Wilgus, David Lemme, Mira Aji, Adam Qamar, Shabia Saeed, Raya Maria Lahoud , Nelly Bozorgzad, Joshua-James Nantel-Ouimet .
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-# Import necessary libraries
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import f1_score
-from sklearn.model_selection import KFold
-from joblib import dump
-from sklearn.svm import SVC
+import tensorflow as tf
 import xgboost as xgb
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score
+from sklearn.model_selection import KFold, train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.utils.class_weight import compute_class_weight
+from tensorflow.keras.layers import Conv1D, Dense, Dropout, Embedding, GlobalAveragePooling1D, Input, MaxPooling1D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.utils import to_categorical
+import tensorflow_addons as tfa
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.optimizers import Adam
+
+# Import logger
+from logger_config import configure_logger
+logger = configure_logger(__name__)
+
 
 # Import logger
 from logger_config import configure_logger
@@ -71,13 +59,6 @@ def train_xgboost(X, y, num_classes, class_weights=None):
             best_model = clf_xgb
     if best_model:
         return best_model, best_f1_score
-
-def vectorize_data(df, vectorizer):
-    if vectorizer is None:
-        vectorizer = TfidfVectorizer(max_features=5000)
-    X = vectorizer.fit_transform(df["tweet"])
-    y = df["class"]
-    return X, y, vectorizer
 
 def train_svm(X, y, class_weights=None):
     clf_svm = SVC(kernel='linear', class_weight=class_weights)
@@ -137,3 +118,74 @@ def train_knn(X, y, class_weights=None):
             best_model_knn = clf_knn
     if best_model_knn:
         return best_model_knn, best_f1_score
+
+
+import tensorflow.keras.backend as K
+
+def f1_score(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    recall = true_positives / (possible_positives + K.epsilon())
+    f1_val = 2 * (precision * recall) / (precision + recall + K.epsilon())
+    return f1_val
+
+
+# Constants
+MAX_VOCAB_SIZE = 10000
+MAX_SEQUENCE_LENGTH = 280
+EMBEDDING_DIM = 16  # Embedding dimensions
+
+# Define the train_neural_network function
+def train_neural_network(X, y, num_classes):
+    model = Sequential([
+        Embedding(MAX_VOCAB_SIZE, EMBEDDING_DIM, input_length=MAX_SEQUENCE_LENGTH),
+        Conv1D(128, 5, activation='relu'),
+        MaxPooling1D(5),
+        Conv1D(128, 5, activation='relu'),
+        GlobalAveragePooling1D(),
+        Dense(128, activation='relu'),
+        Dropout(0.5),
+        Dense(1, activation='sigmoid')
+    ])
+
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[f1_score])
+    #model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=0.001), metrics=['accuracy'])
+
+    # Splitting data for training and validation
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+     # Add EarlyStopping callback
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+
+    history = model.fit(X_train, y_train, epochs=20, validation_data=(X_val, y_val), callbacks=[early_stopping])
+
+    return model
+
+EMOTION_MAX_VOCAB_SIZE = 10000
+EMOTION_MAX_SEQUENCE_LENGTH = 280
+EMOTION_EMBEDDING_DIM = 20
+
+def train_emotion_neural_network(X, y, num_classes):
+    model = Sequential([
+        Embedding(EMOTION_MAX_VOCAB_SIZE, EMOTION_EMBEDDING_DIM, input_length=EMOTION_MAX_SEQUENCE_LENGTH),
+        Conv1D(128, 5, activation='relu'),
+        MaxPooling1D(5),
+        Conv1D(128, 5, activation='relu'),
+        GlobalAveragePooling1D(),
+        Dense(128, activation='relu'),
+        Dropout(0.5),
+        Dense(num_classes, activation='softmax')
+    ])
+
+    # Compile the model for multi-class classification
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[f1_score])
+
+    # Split data for training and validation
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=50, validation_data=(X_val, y_val))
+
+    return model
