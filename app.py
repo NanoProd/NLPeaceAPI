@@ -27,8 +27,8 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 logger.info(f"Current directory set to {current_directory}")
 
 # Load neural network models
-hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model")
-emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model")
+hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model.keras")
+emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model.keras")
 
 try:
     hate_model = tf.keras.models.load_model(hate_model_path)
