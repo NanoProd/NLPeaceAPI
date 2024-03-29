@@ -18,9 +18,9 @@ try:
     logger.info("Successfully loaded SpaCy model.")
 except Exception as e:
     logger.error(f"Failed to load SpaCy model: {str(e)}")
-    from spacy.cli import download
-    download("en_core_web_sm")
-    spacy.load("en_core_web_sm")
+    # from spacy.cli import download
+    # download("en_core_web_sm")
+    # spacy.load("en_core_web_sm")
 
 # Configure directory
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -51,17 +51,20 @@ except Exception as e:
     raise
 
 # Load tokenizers
-hate_tokenizer_path = os.path.join(current_directory, "NLP", "models", "hate_tokenizer.pickle")
-emotion_tokenizer_path = os.path.join(current_directory, "NLP", "models", "emotion_tokenizer.pickle")
-
+# hate_tokenizer_path = os.path.join(current_directory, "NLP", "models", "hate_tokenizer.pickle")
+# emotion_tokenizer_path = os.path.join(current_directory, "NLP", "models", "emotion_tokenizer.pickle")
+tokenizer_path = os.path.join(current_directory, "NLP", "models", "tokenizer.pickle")
 try:
-    with open(hate_tokenizer_path, 'rb') as handle:
-        hate_tokenizer = pickle.load(handle)
-    logger.info("Successfully loaded the hate tokenizer.")
+    # with open(hate_tokenizer_path, 'rb') as handle:
+    #     hate_tokenizer = pickle.load(handle)
+    # logger.info("Successfully loaded the hate tokenizer.")
 
-    with open(emotion_tokenizer_path, 'rb') as handle:
-        emotion_tokenizer = pickle.load(handle)
-    logger.info("Successfully loaded the emotion tokenizer.")
+    # with open(emotion_tokenizer_path, 'rb') as handle:
+    #     emotion_tokenizer = pickle.load(handle)
+    # logger.info("Successfully loaded the emotion tokenizer.")
+    with open(tokenizer_path, 'rb') as handle:
+        tokenizer = pickle.load(handle)
+    logger.info("Successfully loaded the hate tokenizer.")
 except Exception as e:
     logger.error(f"Error loading tokenizers: {str(e)}")
     raise
@@ -104,7 +107,7 @@ async def classify_hatespeech(tweet: Tweet):
     if not tweet.text:
         return {"prediction": -1, "class_name": "Invalid Input"}
     try:
-        padded_sequence = prepare_text_for_nn(tweet.text, hate_tokenizer)
+        padded_sequence = prepare_text_for_nn(tweet.text, tokenizer)
         prediction = hate_model.predict(padded_sequence)
         class_label = int(np.argmax(prediction, axis=1)[0])
 
@@ -123,7 +126,7 @@ async def classify_hatespeech(tweet: Tweet):
     if not tweet.text:
         return {"prediction": -1, "class_name": "Invalid Input"}
     try:
-        padded_sequence = prepare_text_for_nn(tweet.text, hate_tokenizer)
+        padded_sequence = prepare_text_for_nn(tweet.text, tokenizer)
         prediction = hate_model.predict(padded_sequence)
         class_label = int(np.argmax(prediction, axis=1)[0])
 
@@ -142,7 +145,7 @@ async def classify_emotion(tweet: Tweet):
     if not tweet.text:
         return {"prediction": -1, "class_name": "Invalid Input"}
     try:
-        padded_sequence = prepare_text_for_nn(tweet.text, emotion_tokenizer)
+        padded_sequence = prepare_text_for_nn(tweet.text, tokenizer)
         prediction = emotion_model.predict(padded_sequence)
         class_label = int(np.argmax(prediction, axis=1)[0])
         class_name = emotion_class_names.get(class_label, "Unknown")
