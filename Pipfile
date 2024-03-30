@@ -16,7 +16,6 @@ nltk = "==3.8.1"
 nlpaug = "*"
 scikit-learn = "*"
 tensorflow-cpu = "*"
-en-core-web-sm = {url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.2/en_core_web_sm-3.7.2.tar.gz"}
 
 
 [dev-packages]
