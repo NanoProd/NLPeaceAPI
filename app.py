@@ -18,9 +18,9 @@ try:
     logger.info("Successfully loaded SpaCy model.")
 except Exception as e:
     logger.error(f"Failed to load SpaCy model: {str(e)}")
-    # from spacy.cli import download
-    # download("en_core_web_sm")
-    # spacy.load("en_core_web_sm")
+    from spacy.cli import download
+    download("en_core_web_sm")
+    spacy.load("en_core_web_sm")
 
 # Configure directory
 current_directory = os.path.dirname(os.path.abspath(__file__))
