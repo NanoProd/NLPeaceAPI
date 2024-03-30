@@ -119,28 +119,15 @@ logger = configure_logger(__name__)
 #     if best_model_knn:
 #         return best_model_knn, best_f1_score
 
-
-import tensorflow.keras.backend as K
-
-def f1_score(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    recall = true_positives / (possible_positives + K.epsilon())
-    f1_val = 2 * (precision * recall) / (precision + recall + K.epsilon())
-    return f1_val
-
-
 # Constants
 MAX_VOCAB_SIZE = 10000
 MAX_SEQUENCE_LENGTH = 280
 EMBEDDING_DIM = 16  # Embedding dimensions
-
+hate_f1score = tf.keras.metrics.F1Score(average="weighted",threshold=0.5)
 # Define the train_neural_network function
 def train_neural_network(X, y, num_classes):
     model = Sequential([
-        Embedding(MAX_VOCAB_SIZE, EMBEDDING_DIM, input_length=MAX_SEQUENCE_LENGTH),
+        Embedding(MAX_VOCAB_SIZE, EMBEDDING_DIM, input_shape=(MAX_SEQUENCE_LENGTH,)),
         Conv1D(128, 5, activation='relu'),
         MaxPooling1D(5),
         Conv1D(128, 5, activation='relu'),
@@ -150,7 +137,7 @@ def train_neural_network(X, y, num_classes):
         Dense(1, activation='sigmoid')
     ])
 
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[f1_score])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[tf.keras.metrics.Recall(name='recall'), tf.keras.metrics.Precision(name='precision')])
     #model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=0.001), metrics=['accuracy'])
 
     # Splitting data for training and validation
@@ -159,7 +146,7 @@ def train_neural_network(X, y, num_classes):
      # Add EarlyStopping callback
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-    history = model.fit(X_train, y_train, epochs=20, validation_data=(X_val, y_val), callbacks=[early_stopping])
+    history = model.fit(X_train, y_train, epochs=5, validation_data=(X_val, y_val), callbacks=[early_stopping])
 
     return model
 
@@ -169,7 +156,7 @@ EMOTION_EMBEDDING_DIM = 20
 
 def train_emotion_neural_network(X, y, num_classes):
     model = Sequential([
-        Embedding(EMOTION_MAX_VOCAB_SIZE, EMOTION_EMBEDDING_DIM, input_length=EMOTION_MAX_SEQUENCE_LENGTH),
+        Embedding(EMOTION_MAX_VOCAB_SIZE, EMOTION_EMBEDDING_DIM, input_shape=(MAX_SEQUENCE_LENGTH,)),
         Conv1D(128, 5, activation='relu'),
         MaxPooling1D(5),
         Conv1D(128, 5, activation='relu'),
@@ -180,12 +167,12 @@ def train_emotion_neural_network(X, y, num_classes):
     ])
 
     # Compile the model for multi-class classification
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[f1_score])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[tf.keras.metrics.Recall(name='recall'), tf.keras.metrics.Precision(name='precision')])
 
     # Split data for training and validation
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val))
+    history = model.fit(X_train, y_train, epochs=5, validation_data=(X_val, y_val))
 
     return model

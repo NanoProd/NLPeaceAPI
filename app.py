@@ -42,9 +42,8 @@ def load_keras_model(model_path):
         logger.error(f"Error loading model from {model_path}: {str(e)}")
         raise
 
-# Load neural network models with TFSMLayer
-hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model")
-emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model")
+hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model.keras")
+emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model.keras")
 
 try:
     hate_model = load_keras_model(hate_model_path)
