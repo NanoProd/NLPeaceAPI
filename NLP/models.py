@@ -14,6 +14,8 @@ from tensorflow.keras.models import Sequential
 # import tensorflow_addons as tfa
 # from tensorflow.keras.regularizers import l2
 # from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.utils import to_categorical
 
 # Import logger
 from logger_config import configure_logger
@@ -123,9 +125,15 @@ logger = configure_logger(__name__)
 MAX_VOCAB_SIZE = 10000
 MAX_SEQUENCE_LENGTH = 280
 EMBEDDING_DIM = 16  # Embedding dimensions
-hate_f1score = tf.keras.metrics.F1Score(average="weighted",threshold=0.5)
-# Define the train_neural_network function
+
 def train_neural_network(X, y, num_classes):
+    # One-hot encode the labels
+    y_one_hot = to_categorical(y, num_classes)
+
+    # Splitting data for training and validation
+    X_train, X_val, y_train_one_hot, y_val_one_hot = train_test_split(X, y_one_hot, test_size=0.2, random_state=42)
+
+    # Define the model
     model = Sequential([
         Embedding(MAX_VOCAB_SIZE, EMBEDDING_DIM, input_shape=(MAX_SEQUENCE_LENGTH,)),
         Conv1D(128, 5, activation='relu'),
@@ -133,20 +141,24 @@ def train_neural_network(X, y, num_classes):
         Conv1D(128, 5, activation='relu'),
         GlobalAveragePooling1D(),
         Dense(128, activation='relu'),
-        Dropout(0.5),
-        Dense(1, activation='sigmoid')
+        Dense(num_classes, activation='softmax')
     ])
 
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[tf.keras.metrics.Recall(name='recall'), tf.keras.metrics.Precision(name='precision')])
-    #model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=0.001), metrics=['accuracy'])
+    # Compile the model
+    model.compile(loss='categorical_crossentropy', 
+                  optimizer='adam', 
+                  metrics=['accuracy', 
+                           tf.keras.metrics.Precision(),
+                           tf.keras.metrics.Recall(),
+                           tf.keras.metrics.CategoricalAccuracy(),
+                           tf.keras.metrics.AUC(name='auc'),
+                           tf.keras.metrics.AUC(name='prc', curve='PR')])
 
-    # Splitting data for training and validation
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Add EarlyStopping callback
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-     # Add EarlyStopping callback
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
-
-    history = model.fit(X_train, y_train, epochs=5, validation_data=(X_val, y_val), callbacks=[early_stopping])
+    # Train the model
+    history = model.fit(X_train, y_train_one_hot, epochs=20, validation_data=(X_val, y_val_one_hot), callbacks=[early_stopping])
 
     return model
 
@@ -162,17 +174,26 @@ def train_emotion_neural_network(X, y, num_classes):
         Conv1D(128, 5, activation='relu'),
         GlobalAveragePooling1D(),
         Dense(128, activation='relu'),
-        Dropout(0.5),
         Dense(num_classes, activation='softmax')
     ])
 
     # Compile the model for multi-class classification
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[tf.keras.metrics.Recall(name='recall'), tf.keras.metrics.Precision(name='precision')])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=[tf.keras.metrics.BinaryCrossentropy(name='cross entropy'),  # same as model's loss
+      tf.keras.metrics.MeanSquaredError(name='Brier score'),
+      tf.keras.metrics.TruePositives(name='tp'),
+      tf.keras.metrics.FalsePositives(name='fp'),
+      tf.keras.metrics.TrueNegatives(name='tn'),
+      tf.keras.metrics.FalseNegatives(name='fn'), 
+      tf.keras.metrics.Accuracy(name='accuracy'),
+      tf.keras.metrics.Precision(name='precision'),
+      tf.keras.metrics.Recall(name='recall'),
+      tf.keras.metrics.AUC(name='auc'),
+      tf.keras.metrics.AUC(name='prc', curve='PR')])
 
     # Split data for training and validation
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=5, validation_data=(X_val, y_val))
+    history = model.fit(X_train, y_train, epochs=50, validation_data=(X_val, y_val))
 
     return model

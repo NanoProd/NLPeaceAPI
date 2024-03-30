@@ -52,7 +52,7 @@ nlp = spacy.load(model, disable=['parser', 'ner'])
 def import_hate_data():
     df = pd.read_csv('data/hatespeech.csv')
     df = df[['tweet', 'class']]
-    df['class'] = df['class'].replace(1, 0)
+    #df['class'] = df['class'].replace(1, 0)
     return df
 
 def import_emotion_data():
