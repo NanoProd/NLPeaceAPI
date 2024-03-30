@@ -44,6 +44,7 @@ except Exception as e:
 #define app
 app = FastAPI()
 
+
 #define tweet class
 class Tweet(BaseModel):
     text: str
