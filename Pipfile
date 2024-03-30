@@ -16,7 +16,7 @@ nltk = "==3.8.1"
 nlpaug = "*"
 scikit-learn = "*"
 tensorflow-cpu = "*"
-
+en-core-web-sm = {path = "./en_core_web_sm-2.2.0.tar.gz"}
 
 [dev-packages]
 
