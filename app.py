@@ -32,19 +32,29 @@ def load_model_with_tfsmlayer(model_path):
     model.add(TFSMLayer(model_path, call_endpoint='serving_default'))
     return model
 
+# Function to load a Keras model
+def load_keras_model(model_path):
+    try:
+        model = tf.keras.models.load_model(model_path)
+        logger.info(f"Successfully loaded model from {model_path}")
+        return model
+    except Exception as e:
+        logger.error(f"Error loading model from {model_path}: {str(e)}")
+        raise
+
 # Load neural network models with TFSMLayer
 hate_model_path = os.path.join(current_directory, "NLP", "models", "best_hate_model")
 emotion_model_path = os.path.join(current_directory, "NLP", "models", "best_emotion_model")
 
 try:
-    hate_model = load_model_with_tfsmlayer(hate_model_path)
+    hate_model = load_keras_model(hate_model_path)
     logger.info("Successfully loaded the hate model.")
 except Exception as e:
     logger.error(f"Error loading hate model: {str(e)}")
     raise
 
 try:
-    emotion_model = load_model_with_tfsmlayer(emotion_model_path)
+    emotion_model = load_keras_model(emotion_model_path)
     logger.info("Successfully loaded the emotion model.")
 except Exception as e:
     logger.error(f"Error loading emotion model: {str(e)}")
