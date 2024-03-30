@@ -1,0 +1,6 @@
+NLP/data/
+NLP/bert_pretrained.py
+NLP/data_processing.py
+NLP/emotionDetectionModel.py
+NLP/main.py
+NLP/requirements.txt 
