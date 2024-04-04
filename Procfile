@@ -1,1 +1,1 @@
-web: gunicorn -w 1 -k uvicorn.workers.UvicornWorker app:app --pythonpath=./NLP
+web: sh startup.sh

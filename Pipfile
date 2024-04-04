@@ -68,7 +68,6 @@ wasabi = "==1.1.2"
 weasel = "==0.3.4"
 xgboost = "==2.0.2"
 zipp = "==3.17.0"
-en-core-web-sm = {file = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz"}
 
 [dev-packages]
 

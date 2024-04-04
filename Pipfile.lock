@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "da1e7916b47b12757e2c47d4d32a9be44eb141f5874a6bee15171bad126b9068"
+            "sha256": "956bb5623a6699839acf876d9a4247becdca79baec1904bef8a20511d568a53a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -323,9 +323,6 @@
             ],
             "index": "pypi",
             "version": "==2.0.8"
-        },
-        "en-core-web-sm": {
-            "file": "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz"
         },
         "exceptiongroup": {
             "hashes": [
@@ -1240,11 +1237,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:1e8fdff6797d3865f37397be788a4e3cba233608e9b509382a2777d25ebde7f2",
-                "sha256:735896e78a4742605974de002ac60562d286fa8051a7e2299445e8e8fbb01aa6"
+                "sha256:0ff4183f8f42cd8fa3acea16c45205521a4ef28f73c6391d8a25e92893134f2e",
+                "sha256:c21c49fb1042386df081cb5d86759792ab89efca84cf114889191cd09aacc80c"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==69.0.2"
+            "version": "==69.2.0"
         },
         "six": {
             "hashes": [
@@ -1475,12 +1472,12 @@
         },
         "uvicorn": {
             "hashes": [
-                "sha256:09c8e5a79dc466bdf28dead50093957db184de356fcdc48697bad3bde4c2588e",
-                "sha256:7c84fea70c619d4a710153482c0d230929af7bcf76c7bfa6de151f0a3a80121e"
+                "sha256:2c2aac7ff4f4365c206fd773a39bf4ebd1047c238f8b8268ad996829323473de",
+                "sha256:6a69214c0b6a087462412670b3ef21224fa48cae0e452b5883e8e8bdfdd11dd0"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.24.0.post1"
+            "version": "==0.29.0"
         },
         "wasabi": {
             "hashes": [
