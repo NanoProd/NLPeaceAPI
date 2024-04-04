@@ -27,48 +27,103 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import KFold
 from joblib import dump
 import xgboost as xgb
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
 
 from logger_config import configure_logger
 logger = configure_logger(__name__)
 
 def train_random_forest(X, y):
     clf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced")
-    kf = KFold(n_splits=10)
-    best_f1_score = 0
-    best_model_rf = None
+    kf = KFold(n_splits=6)
+    f1_scores = []
     for train_index, test_index in kf.split(X):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
         f1 = f1_score(y_test, y_pred, average='weighted')
+        f1_scores.append(f1)
         logger.info(f"RandomForest F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model_rf = clf
-    if best_model_rf:
-        return best_model_rf, best_f1_score
+    average_f1_score = np.mean(f1_scores)
+    logger.info(f"RF Average F1 Score: {average_f1_score}")
+    return clf, average_f1_score
 
-def train_xgboost(X, y):
-    clf_xgb = xgb.XGBClassifier(objective='multi:softmax', num_class=3)
-    kf = KFold(n_splits=10)
-    best_f1_score = 0
-    best_model = None
+def train_xgboost(X, y, num_classes):
+    clf_xgb = xgb.XGBClassifier(objective='multi:softmax', num_class=num_classes)
+    kf = KFold(n_splits=6)
+    f1_scores = []
     for train_index, test_index in kf.split(X):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
         clf_xgb.fit(X_train, y_train)
         y_pred = clf_xgb.predict(X_test)
         f1 = f1_score(y_test, y_pred, average='weighted')
+        f1_scores.append(f1)
         logger.info(f"XGBoost F1 Score: {f1}")
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model = clf_xgb
-    if best_model:
-        return best_model, best_f1_score
+    average_f1_score = np.mean(f1_scores)
+    logger.info(f"XGB Average F1 Score: {average_f1_score}")
+    return clf_xgb, average_f1_score
+
+def train_naive_bayes(X, y):
+    clf_nb = MultinomialNB()
+    kf = KFold(n_splits=6)
+    f1_scores = []
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        clf_nb.fit(X_train, y_train)
+        y_pred = clf_nb.predict(X_test)
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        f1_scores.append(f1)
+        logger.info(f"Naive Bayes F1 Score: {f1}")
+    average_f1_score = np.mean(f1_scores)
+    logger.info(f"NB Average F1 Score: {average_f1_score}")
+    return clf_nb, average_f1_score
+
+def train_logistic_regression(X, y):
+    clf_lr = LogisticRegression(random_state=42, max_iter=1000)
+    kf = KFold(n_splits=6)
+    f1_scores = []
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        clf_lr.fit(X_train, y_train)
+        y_pred = clf_lr.predict(X_test)
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        f1_scores.append(f1)
+        logger.info(f"Logistic Regression F1 Score: {f1}")
+    average_f1_score = np.mean(f1_scores)
+    logger.info(f"LR Average F1 Score: {average_f1_score}")
+    return clf_lr, average_f1_score
+
+def train_svm(X, y):
+    clf_svm = SVC(random_state=42)
+    kf = KFold(n_splits=6)
+    f1_scores = []
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        clf_svm.fit(X_train, y_train)
+        y_pred = clf_svm.predict(X_test)
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        f1_scores.append(f1)
+        logger.info(f"SVM F1 Score: {f1}")
+    average_f1_score = np.mean(f1_scores)
+    logger.info(f"SVM Average F1 Score: {average_f1_score}")
+    return clf_svm, average_f1_score
+
 
 def vectorize_data(df):
     vectorizer = TfidfVectorizer(max_features=5000)
     X = vectorizer.fit_transform(df["tweet"])
     y = df["class"]
+    return X, y, vectorizer
+
+def vectorize_emotion_data(df):
+    vectorizer = TfidfVectorizer(max_features=5000)
+    X = vectorizer.fit_transform(df["tweet"])
+    y = df["label"]
     return X, y, vectorizer
